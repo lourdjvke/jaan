@@ -69,8 +69,9 @@ const App: React.FC = () => {
     })
   };
 
+  // Fixed: Added 'as const' to ensure 'spring' is treated as a literal type to satisfy Transition interface
   const transition = {
-    x: { type: "spring", stiffness: 200, damping: 25 },
+    x: { type: "spring" as const, stiffness: 200, damping: 25 },
     opacity: { duration: 0.5 }
   };
 

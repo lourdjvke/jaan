@@ -1,13 +1,10 @@
 
 import React from 'react';
 
-export const JaanLogo: React.FC<{ className?: string, color?: string }> = ({ className = "w-24 h-24", color = "#FFA500" }) => (
-  <svg viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <path 
-      d="M50 120C77.6142 120 100 97.6142 100 70C100 52.8224 91.3541 37.666 78.125 28.75C78.125 45 68.75 56.25 56.25 56.25C65.625 43.75 62.5 18.75 43.75 0C43.75 25 21.875 31.25 18.75 56.25C15.625 81.25 43.75 87.5 37.5 106.25C50 100 62.5 106.25 50 120Z" 
-      fill={color}
-    />
-  </svg>
+export const JaanLogo: React.FC<{ className?: string, color?: string }> = ({ className = "w-24 h-24" }) => (
+  <div className={`${className} flex items-center justify-center`}>
+    <img src="media/flame.png" alt="JAAN Logo" className="w-full h-full object-contain" />
+  </div>
 );
 
 export const WaveBackground: React.FC = () => (

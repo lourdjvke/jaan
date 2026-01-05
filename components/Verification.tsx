@@ -62,7 +62,8 @@ const Verification: React.FC<Props> = ({ onNext, onBack }) => {
           {otp.map((digit, i) => (
             <input
               key={i}
-              ref={el => inputRefs.current[i] = el!}
+              // Fixed: Modified callback ref to be a block statement to ensure it returns void, avoiding TS error
+              ref={el => { if (el) inputRefs.current[i] = el; }}
               type="text"
               inputMode="numeric"
               value={digit}
