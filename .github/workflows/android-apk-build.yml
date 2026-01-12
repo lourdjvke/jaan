@@ -43,11 +43,13 @@ jobs:
     - name: Install Capacitor
       run: npm install @capacitor/cli @capacitor/android
 
-    # 7️⃣ Add Android platform and copy web build
-    - name: Setup Capacitor Android
-      run: |
-        npx cap add android || echo "Android platform already exists"
-        npx cap copy android
+# 7️⃣ Setup Capacitor Android
+- name: Setup Capacitor Android
+  run: |
+    npx cap init "JaanOnboarding" "com.yourname.jaan" || echo "Already initialized"
+    npx cap add android || echo "Android platform already exists"
+    npx cap copy android
+
 
     # 8️⃣ Build the APK using Gradle
     - name: Build APK
