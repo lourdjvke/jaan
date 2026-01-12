@@ -32,7 +32,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          # removed Gradle caching to avoid the “no gradle file found” error
+          # No Gradle cache to avoid file errors
 
       - name: Install Android SDK
         uses: android-actions/setup-android@v3
@@ -55,7 +55,11 @@ jobs:
       - name: Sync Capacitor Android
         run: npx cap sync android
 
-      - name: Build Debug APK
+      - name: Build Debug APK (force Java 17)
+        env:
+          JAVA_HOME: ${{ runner.java_home }}
+          # Force Gradle to use Java 17
+          ORG_GRADLE_JAVA_HOME: ${{ runner.java_home }}
         run: |
           cd android
           ./gradlew assembleDebug \
@@ -63,7 +67,7 @@ jobs:
             -Pandroid.compileOptions.sourceCompatibility=17 \
             -Pandroid.compileOptions.targetCompatibility=17 \
             -Pkotlin.jvmTarget=17
-
+          
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
