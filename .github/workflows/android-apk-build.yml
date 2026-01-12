@@ -28,12 +28,14 @@ jobs:
         run: npm run build
 
       - name: Setup Java 17
-        id: setup-java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-          # No Gradle cache to avoid missing file errors
+          # No Gradle cache to avoid errors
+          
+      - name: Verify Java version
+        run: java -version
 
       - name: Install Android SDK
         uses: android-actions/setup-android@v3
@@ -56,21 +58,13 @@ jobs:
       - name: Sync Capacitor Android
         run: npx cap sync android
 
-      - name: Build Debug APK (force Java 17)
-        env:
-          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
-          ORG_GRADLE_JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
+      - name: Build Debug APK (Gradle picks up JDK automatically)
         run: |
           cd android
-          ./gradlew assembleDebug \
-            -Dorg.gradle.java.home=$ORG_GRADLE_JAVA_HOME \
-            -Pandroid.compileOptions.sourceCompatibility=17 \
-            -Pandroid.compileOptions.targetCompatibility=17 \
-            -Pkotlin.jvmTarget=17
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-
