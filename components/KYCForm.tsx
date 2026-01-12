@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { JaanLogo } from './Icons';
 import { ChevronLeft, Info, Calendar, ChevronDown, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { db, auth } from '../lib/firebase';
+import { ref, update, onValue } from 'firebase/database';
 
 interface Props {
   onNext: () => void;
@@ -11,18 +13,7 @@ interface Props {
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const days = Array.from({ length: 31 }, (_, i) => i + 1);
-const years = Array.from({ length: 100 }, (_, i) => 2024 - i);
-
-const calculateAge = (m: string, d: number, y: number) => {
-  const birthDate = new Date(`${m} ${d}, ${y}`);
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  return age >= 0 ? age : 0;
-};
+const years = Array.from({ length: 100 }, (_, i) => 2025 - i);
 
 const KYCForm: React.FC<Props> = ({ onNext, onBack }) => {
   const [showInfo, setShowInfo] = useState(false);
@@ -31,7 +22,7 @@ const KYCForm: React.FC<Props> = ({ onNext, onBack }) => {
   
   const [tempMonth, setTempMonth] = useState("September");
   const [tempDay, setTempDay] = useState(16);
-  const [tempYear, setTempYear] = useState(2017);
+  const [tempYear, setTempYear] = useState(2000);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -41,11 +32,31 @@ const KYCForm: React.FC<Props> = ({ onNext, onBack }) => {
     gender: ''
   });
 
+  useEffect(() => {
+    if (auth.currentUser) {
+      const kycRef = ref(db, `users/${auth.currentUser.uid}/kyc`);
+      onValue(kycRef, (snapshot) => {
+        const data = snapshot.val();
+        if (data) setFormData(prev => ({ ...prev, ...data }));
+      }, { onlyOnce: true });
+    }
+  }, []);
+
+  const handleNext = async () => {
+    if (auth.currentUser) {
+      await update(ref(db, `users/${auth.currentUser.uid}`), {
+        kyc: formData,
+        'onboarding/lastStep': 9 // TRANSACTION_PIN
+      });
+    }
+    onNext();
+  };
+
   const isFormValid = formData.fullName && formData.phone && formData.dob && formData.gender;
 
   const handleGenderSelect = (gender: string) => {
     setFormData({ ...formData, gender });
-    setShowGender(false);
+    setTimeout(() => setShowGender(false), 200);
   };
 
   const handleDOBConfirm = () => {
@@ -53,11 +64,8 @@ const KYCForm: React.FC<Props> = ({ onNext, onBack }) => {
     setShowDOB(false);
   };
 
-  const currentAge = calculateAge(tempMonth, tempDay, tempYear);
-
   return (
     <div className="flex flex-col h-full bg-white pt-12 relative overflow-hidden">
-      {/* Header with Step Indicator */}
       <div className="px-8 mb-6">
         <div className="flex gap-2 mb-8">
           <div className="flex-1 h-1 bg-[#6338F9] rounded-full"></div>
@@ -80,10 +88,7 @@ const KYCForm: React.FC<Props> = ({ onNext, onBack }) => {
       <div className="flex-1 space-y-6 px-8 no-scrollbar overflow-y-auto pb-10">
         <div className="flex items-center gap-2">
           <h2 className="text-2xl font-extrabold text-[#111]">Tell Us More About You</h2>
-          <button 
-            onClick={() => setShowInfo(true)}
-            className="p-1.5 bg-purple-50 text-[#6338F9] rounded-full active:bg-purple-100 transition-colors"
-          >
+          <button onClick={() => setShowInfo(true)} className="p-1.5 bg-purple-50 text-[#6338F9] rounded-full">
             <Info size={16} />
           </button>
         </div>
@@ -96,7 +101,7 @@ const KYCForm: React.FC<Props> = ({ onNext, onBack }) => {
               placeholder="As It Appears On Your ID"
               value={formData.fullName}
               onChange={e => setFormData({...formData, fullName: e.target.value})}
-              className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] text-[#111] placeholder:text-gray-400" 
+              className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none font-semibold text-[15px] text-[#111] placeholder:text-gray-400" 
             />
           </div>
 
@@ -104,26 +109,22 @@ const KYCForm: React.FC<Props> = ({ onNext, onBack }) => {
             <label className="text-[12px] font-bold text-gray-800 tracking-tight">User Name</label>
             <input 
               type="text" 
-              placeholder="This Can Be A Fun Nickname"
+              placeholder="Fun Nickname"
               value={formData.userName}
               onChange={e => setFormData({...formData, userName: e.target.value})}
-              className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] text-[#111] placeholder:text-gray-400" 
+              className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none font-semibold text-[15px] text-[#111] placeholder:text-gray-400" 
             />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-[12px] font-bold text-gray-800 tracking-tight">Phone Number*</label>
             <div className="flex gap-2">
-              <div className="w-[80px] bg-[#F8F9FB] rounded-2xl flex items-center justify-center gap-1 font-bold text-sm border-2 border-transparent">
-                 <img src="https://flagcdn.com/w20/ng.png" className="w-5 h-auto rounded-sm" />
-                 <ChevronDown size={14} className="text-gray-400" />
-              </div>
               <input 
                 type="tel" 
                 placeholder="+234 000 000 0000"
                 value={formData.phone}
                 onChange={e => setFormData({...formData, phone: e.target.value})}
-                className="flex-1 bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] text-[#111] placeholder:text-gray-400" 
+                className="flex-1 bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none font-semibold text-[15px] text-[#111] placeholder:text-gray-400" 
               />
             </div>
           </div>
@@ -131,8 +132,8 @@ const KYCForm: React.FC<Props> = ({ onNext, onBack }) => {
           <div className="space-y-1.5">
             <label className="text-[12px] font-bold text-gray-800 tracking-tight">Date Of Birth*</label>
             <div className="relative" onClick={() => setShowDOB(true)}>
-              <div className="w-full bg-[#F8F9FB] border-2 border-transparent rounded-2xl px-5 py-4 font-semibold text-[15px] text-[#111] pr-12 cursor-pointer h-[58px] flex items-center">
-                {formData.dob || <span className="text-gray-400 font-medium">Select Date Of Birth</span>}
+              <div className="w-full bg-[#F8F9FB] border-2 border-transparent rounded-2xl px-5 py-4 font-semibold text-[15px] cursor-pointer h-[58px] flex items-center">
+                {formData.dob ? <span className="text-[#111]">{formData.dob}</span> : <span className="text-gray-400">Select Date Of Birth</span>}
               </div>
               <Calendar size={20} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
@@ -141,8 +142,8 @@ const KYCForm: React.FC<Props> = ({ onNext, onBack }) => {
           <div className="space-y-1.5">
             <label className="text-[12px] font-bold text-gray-800 tracking-tight">Gender*</label>
             <div className="relative" onClick={() => setShowGender(true)}>
-              <div className="w-full bg-[#F8F9FB] border-2 border-transparent rounded-2xl px-5 py-4 font-semibold text-[15px] text-[#111] pr-12 cursor-pointer h-[58px] flex items-center">
-                {formData.gender || <span className="text-gray-400 font-medium">Select Preferred Gender</span>}
+              <div className="w-full bg-[#F8F9FB] border-2 border-transparent rounded-2xl px-5 py-4 font-semibold text-[15px] cursor-pointer h-[58px] flex items-center">
+                {formData.gender ? <span className="text-[#111]">{formData.gender}</span> : <span className="text-gray-400">Select Preferred Gender</span>}
               </div>
               <ChevronDown size={20} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
@@ -150,144 +151,123 @@ const KYCForm: React.FC<Props> = ({ onNext, onBack }) => {
         </div>
 
         <button 
-          onClick={onNext}
+          onClick={handleNext}
           disabled={!isFormValid}
-          className={`w-full py-4 rounded-2xl font-bold shadow-xl transition-all text-sm mt-4 ${
-            isFormValid 
-              ? 'bg-[#6338F9] text-white shadow-purple-100 active:scale-95' 
-              : 'bg-purple-100 text-white cursor-not-allowed shadow-none'
+          className={`w-full py-4 rounded-2xl font-bold shadow-xl transition-all ${
+            isFormValid ? 'bg-[#6338F9] text-white' : 'bg-purple-100 text-white'
           }`}
         >
           Continue
         </button>
       </div>
 
-      {/* DOB Picker Bottom Sheet */}
-      <BottomPicker 
-        show={showDOB} 
-        onClose={() => setShowDOB(false)} 
-        title={
-          <div className="flex items-center justify-between w-full">
-            <span className="text-[#111] font-extrabold text-[17px]">Select Your Date of Birth</span>
-            <span className="text-[#6338F9] font-bold text-sm bg-purple-50 px-3 py-1 rounded-full">{currentAge} Years Old</span>
-          </div>
-        }
-      >
-        <div className="flex flex-col gap-8">
-          <div className="flex justify-around h-48 overflow-hidden relative">
-            <div className="absolute top-1/2 left-0 right-0 -translate-y-1/2 h-12 border-y-2 border-gray-50 pointer-events-none"></div>
+      {/* Date Of Birth Picker */}
+      <BottomPicker show={showDOB} onClose={() => setShowDOB(false)} title="Select Your Date of Birth">
+        <div className="flex flex-col">
+          <div className="flex justify-around h-[220px] relative mb-10 overflow-hidden">
+             {/* Selection window borders */}
+            <div className="absolute top-1/2 left-0 right-0 h-[44px] -translate-y-1/2 border-y border-gray-100 pointer-events-none z-10"></div>
+            
             <ScrollPicker items={months} value={tempMonth} onSelect={setTempMonth} />
             <ScrollPicker items={days} value={tempDay} onSelect={setTempDay} />
             <ScrollPicker items={years} value={tempYear} onSelect={setTempYear} />
           </div>
-          
           <button 
             onClick={handleDOBConfirm}
-            className="w-full bg-[#6338F9] text-white py-4 rounded-2xl font-bold shadow-xl shadow-purple-100 active:scale-95 transition-all"
+            className="w-full py-5 rounded-[2rem] bg-[#6338F9] text-white font-black text-[16px] shadow-xl shadow-purple-100 active:scale-[0.98] transition-all"
           >
-            Set DOB
+            Confirm Date
           </button>
         </div>
       </BottomPicker>
 
-      {/* Gender Picker Bottom Sheet */}
-      <BottomPicker 
-        show={showGender} 
-        onClose={() => setShowGender(false)} 
-        title={<span className="text-[#111] font-extrabold text-[17px]">Select Preferred Gender</span>}
-      >
-        <div className="space-y-2">
-           {[
-             { id: 'Female', label: 'Female', icon: '♀️' },
-             { id: 'Male', label: 'Male', icon: '♂️' },
-             { id: 'Non-binary', label: 'Non-binary', icon: '⚧️' },
-             { id: 'Prefer not to say', label: 'Prefer not to say', icon: '🔘' }
-           ].map((g) => (
-             <button 
-               key={g.id}
-               onClick={() => handleGenderSelect(g.id)}
-               className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-colors text-left ${formData.gender === g.id ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
-             >
-               <span className="text-xl">{g.icon}</span>
-               <span className="flex-1 font-bold text-gray-800">{g.label}</span>
-               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.gender === g.id ? 'border-[#6338F9]' : 'border-gray-200'}`}>
-                 {formData.gender === g.id && <div className="w-2.5 h-2.5 rounded-full bg-[#6338F9]" />}
-               </div>
-             </button>
-           ))}
+      {/* Gender Picker */}
+      <BottomPicker show={showGender} onClose={() => setShowGender(false)} title="Select Preferred Gender">
+        <div className="space-y-1">
+          {[
+            { id: 'Female', label: 'Female', icon: '♀️' },
+            { id: 'Male', label: 'Male', icon: '♂️' },
+            { id: 'Non-binary', label: 'Non-binary', icon: '⚧️' },
+            { id: 'Prefer not to say', label: 'Prefer not to say', icon: '🔘' }
+          ].map((g) => (
+            <button 
+              key={g.id}
+              onClick={() => handleGenderSelect(g.id)}
+              className={`w-full flex items-center gap-4 px-6 py-5 rounded-[1.5rem] transition-all text-left ${formData.gender === g.id ? 'bg-[#F2F3F5]' : 'bg-transparent active:bg-gray-50'}`}
+            >
+              <span className="text-xl opacity-80">{g.icon}</span>
+              <span className={`flex-1 font-bold text-[15px] ${formData.gender === g.id ? 'text-[#111]' : 'text-gray-400'}`}>{g.label}</span>
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${formData.gender === g.id ? 'border-[#6338F9]' : 'border-gray-200'}`}>
+                {formData.gender === g.id && <div className="w-3 h-3 rounded-full bg-[#6338F9]" />}
+              </div>
+            </button>
+          ))}
         </div>
       </BottomPicker>
 
-      {/* Info Tooltip */}
+      {/* Info Modal */}
       <AnimatePresence>
         {showInfo && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm"
-          >
+          <div className="absolute inset-0 z-[200] flex items-center justify-center p-8">
             <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white rounded-[2rem] p-8 relative shadow-2xl max-w-sm text-center"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowInfo(false)}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-[2.5rem] p-8 shadow-2xl relative z-10 w-full"
             >
-              <button onClick={() => setShowInfo(false)} className="absolute top-6 right-6 p-1 text-gray-400">
-                <X size={20} />
-              </button>
-              <div className="w-16 h-16 bg-[#6338F9]/10 text-[#6338F9] rounded-full flex items-center justify-center mx-auto mb-6">
-                <Info size={32} />
-              </div>
-              <h3 className="text-xl font-extrabold text-[#111] mb-4">Why KYC?</h3>
-              <p className="text-[#777] text-sm font-medium leading-[1.6]">
-                To ensure security and comply with regulations.
+              <h4 className="text-[17px] font-black text-[#111] mb-4 flex items-center gap-2">
+                <Info size={20} className="text-[#6338F9]" /> Why we need this?
+              </h4>
+              <p className="text-[13px] font-bold text-gray-500 leading-relaxed mb-6">
+                Your legal information helps us verify your identity and secure your account according to financial regulations. We keep your data safe and encrypted.
               </p>
-              <button onClick={() => setShowInfo(false)} className="w-full bg-[#6338F9] text-white py-4 rounded-2xl font-bold mt-8 shadow-xl shadow-purple-100 active:scale-95 transition-all">
-                Got It
-              </button>
+              <button onClick={() => setShowInfo(false)} className="w-full py-4 bg-[#6338F9] text-white rounded-2xl font-black text-sm">Got it!</button>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
   );
 };
 
-const BottomPicker: React.FC<{ show: boolean, onClose: () => void, title: React.ReactNode, children: React.ReactNode }> = ({ show, onClose, title, children }) => (
+const BottomPicker: React.FC<{ show: boolean, onClose: () => void, title: string, children: React.ReactNode }> = ({ show, onClose, title, children }) => (
   <AnimatePresence>
     {show && (
-      <>
+      <div className="absolute inset-0 z-[100] flex flex-col justify-end">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/40 backdrop-blur-[2px] z-[110]"
+          className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
         />
         <motion.div 
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] p-8 pb-12 z-[120] shadow-[0_-8px_24px_rgba(0,0,0,0.05)]"
+          transition={{ type: "spring", damping: 30, stiffness: 350, mass: 0.8 }}
+          className="relative bg-white rounded-t-[3.5rem] p-8 pb-12 shadow-2xl overflow-hidden"
         >
-          <div className="w-12 h-1 bg-gray-100 rounded-full mx-auto mb-6"></div>
-          <div className="mb-6">{title}</div>
+          <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-10"></div>
+          <h3 className="text-[17px] font-black text-[#111] mb-8">{title}</h3>
           {children}
         </motion.div>
-      </>
+      </div>
     )}
   </AnimatePresence>
 );
 
 const ScrollPicker: React.FC<{ items: any[], value: any, onSelect: (val: any) => void }> = ({ items, value, onSelect }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const itemHeight = 44;
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const scrollTop = e.currentTarget.scrollTop;
-    const itemHeight = 44; // Approx height of items
     const index = Math.round(scrollTop / itemHeight);
-    if (items[index] !== value) {
+    if (items[index] !== undefined && items[index] !== value) {
       onSelect(items[index]);
     }
   };
@@ -295,7 +275,7 @@ const ScrollPicker: React.FC<{ items: any[], value: any, onSelect: (val: any) =>
   useEffect(() => {
     const index = items.indexOf(value);
     if (containerRef.current && index !== -1) {
-      containerRef.current.scrollTop = index * 44;
+      containerRef.current.scrollTop = index * itemHeight;
     }
   }, []);
 
@@ -305,20 +285,20 @@ const ScrollPicker: React.FC<{ items: any[], value: any, onSelect: (val: any) =>
       onScroll={handleScroll}
       className="flex-1 overflow-y-auto no-scrollbar snap-y snap-mandatory px-2"
     >
-      <div className="h-[66px]" /> {/* Padding top for center alignment */}
+      <div className="h-[88px]" /> 
       {items.map((item, i) => (
         <div 
           key={i} 
           onClick={() => {
             onSelect(item);
-            if (containerRef.current) containerRef.current.scrollTop = i * 44;
+            if (containerRef.current) containerRef.current.scrollTo({ top: i * itemHeight, behavior: 'smooth' });
           }}
-          className={`h-11 flex items-center justify-center snap-center cursor-pointer transition-all duration-200 ${item === value ? 'text-[#111] font-black scale-110' : 'text-gray-300 font-bold scale-90'}`}
+          className={`h-[44px] flex items-center justify-center snap-center cursor-pointer transition-all duration-300 ${item === value ? 'text-[#111] font-black scale-110' : 'text-gray-300 font-bold scale-95'}`}
         >
           {item}
         </div>
       ))}
-      <div className="h-[66px]" /> {/* Padding bottom for center alignment */}
+      <div className="h-[88px]" /> 
     </div>
   );
 };

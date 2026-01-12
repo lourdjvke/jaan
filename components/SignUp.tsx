@@ -1,17 +1,51 @@
 
 import React, { useState } from 'react';
 import { JaanLogo } from './Icons';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
+import { auth, db } from '../lib/firebase';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import { ref, set } from 'firebase/database';
+import { sendNotification } from '../services/EmailService';
+import { EmailTemplates } from '../services/EmailTemplates';
 
 interface Props {
-  onNext: () => void;
+  onNext: (email: string) => void;
   onBack: () => void;
   onLogin: () => void;
+  onSocialClick?: () => void;
 }
 
-const SignUp: React.FC<Props> = ({ onNext, onBack, onLogin }) => {
+const SignUp: React.FC<Props> = ({ onNext, onBack, onLogin, onSocialClick }) => {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSignUp = async () => {
+    if (!email || !agreed) return;
+    setLoading(true);
+    try {
+      // Use a robust default password for the initial creation before the "Create Password" step
+      const userCredential = await createUserWithEmailAndPassword(auth, email, "JaanTemporary123!");
+      await sendEmailVerification(userCredential.user);
+      
+      // Initialize DB entry
+      await set(ref(db, `users/${userCredential.user.uid}`), {
+        email: email,
+        createdAt: new Date().toISOString(),
+        onboarding: { lastStep: 6 } // VERIFICATION_SENT step
+      });
+
+      // Send Welcome Email
+      await sendNotification(email, "Welcome to JAAN!", EmailTemplates.welcome(email.split('@')[0]));
+
+      onNext(email);
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-white px-8 pt-12 pb-10">
@@ -40,9 +74,8 @@ const SignUp: React.FC<Props> = ({ onNext, onBack, onLogin }) => {
               placeholder="Enter Your Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] text-gray-900" 
+              className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] text-[#111] placeholder:text-gray-400" 
             />
-            <p className="text-[11px] text-gray-400 font-medium">We'll send you a code, it helps to keep your account secure.</p>
           </div>
 
           <div className="flex items-start gap-3 py-2">
@@ -59,14 +92,13 @@ const SignUp: React.FC<Props> = ({ onNext, onBack, onLogin }) => {
         </div>
 
         <button 
-          onClick={onNext}
-          disabled={!email || !agreed}
-          className={`w-full py-4 rounded-2xl font-bold shadow-xl transition-all text-sm mt-4 ${
-            email && agreed 
-              ? 'bg-[#6338F9] text-white shadow-purple-100 active:scale-95' 
-              : 'bg-purple-100 text-white cursor-not-allowed shadow-none'
+          onClick={handleSignUp}
+          disabled={!email || !agreed || loading}
+          className={`w-full py-4 rounded-2xl font-bold shadow-xl transition-all flex items-center justify-center gap-2 ${
+            email && agreed && !loading ? 'bg-[#6338F9] text-white' : 'bg-purple-100 text-white'
           }`}
         >
+          {loading && <Loader2 size={18} className="animate-spin" />}
           Continue
         </button>
 
@@ -87,8 +119,8 @@ const SignUp: React.FC<Props> = ({ onNext, onBack, onLogin }) => {
                 { icon: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png', name: 'Google' },
                 { icon: 'https://cdn-icons-png.flaticon.com/512/124/124010.png', name: 'Facebook' }
               ].map((social, i) => (
-                <button key={i} className="w-14 h-14 rounded-full border border-gray-100 flex items-center justify-center p-3.5 active:bg-gray-50 transition-colors shadow-sm bg-white">
-                   <img src={social.icon} alt={social.name} className={`w-full h-full object-contain ${social.name === 'Apple' ? 'opacity-80' : ''}`} />
+                <button key={i} onClick={onSocialClick} className="w-14 h-14 rounded-full border border-gray-100 flex items-center justify-center p-3.5 active:bg-gray-50 transition-colors shadow-sm bg-white">
+                   <img src={social.icon} alt={social.name} className="w-full h-full object-contain" />
                 </button>
               ))}
            </div>

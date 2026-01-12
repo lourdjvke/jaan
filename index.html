@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JAAN Onboarding</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://sdk.monnify.com/plugin/monnify.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -53,6 +55,20 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
+        .toast-alert {
+            position: fixed;
+            bottom: 1.5em;
+            width: 90%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 3px solid #6338F9;
+            background: white;
+            padding: 1em;
+            border-radius: 1.2rem;
+            box-shadow: 0 10px 25px rgba(99, 56, 249, 0.2);
+            z-index: 9999;
+        }
     </style>
 <script type="importmap">
 {
@@ -60,10 +76,14 @@
     "react": "https://esm.sh/react@18.2.0",
     "react/": "https://esm.sh/react@18.2.0/",
     "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/": "https://esm.sh/react-dom@18.2.0/",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
     "framer-motion": "https://esm.sh/framer-motion@10.16.4?external=react,react-dom",
-    "lucide-react": "https://esm.sh/lucide-react@0.284.0?external=react,react-dom"
+    "lucide-react": "https://esm.sh/lucide-react@0.284.0?external=react,react-dom",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+    "firebase/database": "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "firebase/": "https://esm.sh/firebase@^12.7.0/"
   }
 }
 </script>

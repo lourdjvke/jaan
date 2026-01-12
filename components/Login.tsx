@@ -2,41 +2,56 @@
 import React, { useState } from 'react';
 import { JaanLogo } from './Icons';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { auth } from '../lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { sendNotification } from '../services/EmailService';
+import { EmailTemplates } from '../services/EmailTemplates';
 
 interface Props {
-  onNext: () => void;
   onBack: () => void;
   onSignUp: () => void;
+  onForgot: () => void;
+  onSocialClick?: () => void;
 }
 
-const Login: React.FC<Props> = ({ onNext, onBack, onSignUp }) => {
+const Login: React.FC<Props> = ({ onBack, onSignUp, onForgot, onSocialClick }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (email === 'jvkechris@gmail.com' && password === 'Dorado12345') {
-       setLoading(true);
-       setTimeout(() => {
-          onNext();
-       }, 2000);
-    } else {
-       setError('Invalid credentials. Please try again.');
+  const handleLogin = async () => {
+    if (!email || !password) return;
+    setLoading(true);
+    setError('');
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      if (!userCredential.user.emailVerified) {
+        setError('Please verify your email address before logging in.');
+        return;
+      }
+
+      // Successful login notification with dynamic data
+      const now = new Date().toLocaleString();
+      const device = navigator.userAgent.split(')')[0].split('(')[1] || 'Web Browser';
+      await sendNotification(
+        email, 
+        "Security Alert: New Login Detected", 
+        EmailTemplates.loginSuccess(now, "Detected via Web", device, "Remote Login")
+      );
+      
+    } catch (e: any) {
+      if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
+        setError('Invalid email or password.');
+      } else {
+        setError(e.message);
+      }
+    } finally {
+      setLoading(false);
     }
   };
-
-  const isFormFilled = email.length > 0 && password.length > 0;
-
-  if (loading) {
-    return (
-      <div className="flex flex-col h-full bg-white items-center justify-center">
-         <Loader2 className="w-12 h-12 text-[#6338F9] animate-spin mb-4" />
-         <p className="text-gray-400 font-bold text-sm tracking-widest uppercase">Securing Connection...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col h-full bg-white px-8 pt-12 pb-10">
@@ -45,7 +60,6 @@ const Login: React.FC<Props> = ({ onNext, onBack, onSignUp }) => {
           <JaanLogo className="w-5 h-5" color="#FFA500" />
           <span className="text-[#6338F9] font-black text-xl tracking-widest">JAAN</span>
         </div>
-        
         <h2 className="text-2xl font-extrabold text-[#111]">Welcome Back!</h2>
         <p className="text-[#777] text-[13px] font-medium mt-1">Log in to access your JAAN account</p>
       </div>
@@ -57,11 +71,8 @@ const Login: React.FC<Props> = ({ onNext, onBack, onSignUp }) => {
             type="email" 
             placeholder="Enter your email"
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setError('');
-            }}
-            className={`w-full bg-[#F8F9FB] border-2 rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] text-[#111] placeholder:text-gray-400 ${error ? 'border-red-500 bg-red-50' : 'border-transparent focus:border-[#6338F9] focus:bg-white'}`} 
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] text-[#111] placeholder:text-gray-400" 
           />
         </div>
 
@@ -72,38 +83,32 @@ const Login: React.FC<Props> = ({ onNext, onBack, onSignUp }) => {
               type={showPass ? 'text' : 'password'}
               placeholder="Enter password"
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError('');
-              }}
-              className={`w-full bg-[#F8F9FB] border-2 rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] text-[#111] placeholder:text-gray-400 pr-12 ${error ? 'border-red-500 bg-red-50' : 'border-transparent focus:border-[#6338F9] focus:bg-white'}`} 
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none pr-12 text-[#111] placeholder:text-gray-400" 
             />
             <button 
               onClick={() => setShowPass(!showPass)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 p-1"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
             >
               {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
         </div>
 
-        {error && (
-          <p className="text-red-500 text-[11px] font-bold mt-1 px-1">{error}</p>
-        )}
+        {error && <p className="text-red-500 text-[11px] font-bold">{error}</p>}
 
         <div className="text-left">
-           <button className="text-red-500 text-[12px] font-bold active:opacity-60 transition-opacity">Forgot password?</button>
+           <button onClick={onForgot} className="text-red-500 text-[12px] font-bold">Forgot password?</button>
         </div>
 
         <button 
           onClick={handleLogin}
-          disabled={!isFormFilled}
-          className={`w-full py-4 rounded-2xl font-bold shadow-xl transition-all text-sm mt-4 ${
-            isFormFilled 
-              ? 'bg-[#6338F9] text-white shadow-purple-200 active:scale-95' 
-              : 'bg-purple-100 text-white cursor-not-allowed shadow-none'
+          disabled={loading || !email || !password}
+          className={`w-full py-4 rounded-2xl font-bold shadow-xl transition-all flex items-center justify-center gap-2 ${
+            email && password && !loading ? 'bg-[#6338F9] text-white' : 'bg-purple-100 text-white'
           }`}
         >
+          {loading && <Loader2 size={18} className="animate-spin" />}
           Log in
         </button>
 
@@ -114,16 +119,14 @@ const Login: React.FC<Props> = ({ onNext, onBack, onSignUp }) => {
               <div className="flex-1 h-px bg-gray-100"></div>
            </div>
 
-           <p className="text-[10px] text-gray-400 font-bold uppercase">sign in with</p>
-           
            <div className="flex justify-center gap-6">
               {[
                 { icon: 'https://cdn-icons-png.flaticon.com/512/0/747.png', name: 'Apple' },
                 { icon: 'https://cdn-icons-png.flaticon.com/512/2991/2991148.png', name: 'Google' },
                 { icon: 'https://cdn-icons-png.flaticon.com/512/124/124010.png', name: 'Facebook' }
               ].map((social, i) => (
-                <button key={i} className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center p-3 active:bg-gray-50 transition-colors shadow-sm bg-white">
-                   <img src={social.icon} alt={social.name} className={`w-full h-full object-contain ${social.name === 'Apple' ? 'opacity-80' : ''}`} />
+                <button key={i} onClick={onSocialClick} className="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center p-3 bg-white">
+                   <img src={social.icon} alt={social.name} className="w-full h-full object-contain" />
                 </button>
               ))}
            </div>

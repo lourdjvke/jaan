@@ -1,7 +1,10 @@
 
 import React, { useState } from 'react';
 import { JaanLogo } from './Icons';
-import { ChevronLeft, Eye, EyeOff } from 'lucide-react';
+import { ChevronLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { auth, db } from '../lib/firebase';
+import { updatePassword } from 'firebase/auth';
+import { ref, update } from 'firebase/database';
 
 interface Props {
   onNext: () => void;
@@ -13,6 +16,7 @@ const CreatePassword: React.FC<Props> = ({ onNext, onBack }) => {
   const [confirm, setConfirm] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const criteria = [
     { label: 'at least 8 characters', met: password.length >= 8 },
@@ -23,6 +27,26 @@ const CreatePassword: React.FC<Props> = ({ onNext, onBack }) => {
 
   const allMet = criteria.every(c => c.met);
   const isMatch = password === confirm && password !== '';
+
+  const handleCreatePassword = async () => {
+    if (!allMet || !isMatch || !auth.currentUser) return;
+    setLoading(true);
+    try {
+      // Set the password "quite literally" in Firebase Auth
+      await updatePassword(auth.currentUser, password);
+      
+      // Persist progress to RTDB
+      await update(ref(db, `users/${auth.currentUser.uid}`), {
+        'onboarding/lastStep': 8 // KYC_FORM step
+      });
+      
+      onNext();
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-white px-8 pt-12 pb-10">
@@ -52,7 +76,7 @@ const CreatePassword: React.FC<Props> = ({ onNext, onBack }) => {
                 placeholder="Enter Password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] pr-12 text-gray-900 placeholder:text-gray-400" 
+                className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] pr-12 text-[#111] placeholder:text-gray-400" 
               />
               <button 
                 onClick={() => setShowPass(!showPass)}
@@ -82,7 +106,7 @@ const CreatePassword: React.FC<Props> = ({ onNext, onBack }) => {
                 placeholder="Re-Enter Password"
                 value={confirm}
                 onChange={e => setConfirm(e.target.value)}
-                className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] pr-12 text-gray-900 placeholder:text-gray-400" 
+                className="w-full bg-[#F8F9FB] border-2 border-transparent focus:border-[#6338F9] focus:bg-white rounded-2xl px-5 py-4 outline-none transition-all font-semibold text-[15px] pr-12 text-[#111] placeholder:text-gray-400" 
               />
               <button 
                 onClick={() => setShowConfirm(!showConfirm)}
@@ -95,14 +119,15 @@ const CreatePassword: React.FC<Props> = ({ onNext, onBack }) => {
         </div>
 
         <button 
-          onClick={onNext}
-          disabled={!allMet || !isMatch}
-          className={`w-full py-4 rounded-2xl font-bold shadow-xl transition-all text-sm mt-8 ${
-            allMet && isMatch 
+          onClick={handleCreatePassword}
+          disabled={!allMet || !isMatch || loading}
+          className={`w-full py-4 rounded-2xl font-bold shadow-xl transition-all text-sm mt-8 flex items-center justify-center gap-2 ${
+            allMet && isMatch && !loading
               ? 'bg-[#6338F9] text-white shadow-purple-100 active:scale-95' 
               : 'bg-purple-100 text-white cursor-not-allowed shadow-none'
           }`}
         >
+          {loading && <Loader2 size={18} className="animate-spin" />}
           Create Password
         </button>
       </div>
