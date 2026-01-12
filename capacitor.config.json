@@ -1,0 +1,6 @@
+{
+  "appId": "com.lourdjxke.jaan",
+  "appName": "JaanOnboarding",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
