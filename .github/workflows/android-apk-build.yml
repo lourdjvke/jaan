@@ -32,7 +32,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
+          # removed Gradle caching to avoid the “no gradle file found” error
 
       - name: Install Android SDK
         uses: android-actions/setup-android@v3
@@ -63,7 +63,7 @@ jobs:
             -Pandroid.compileOptions.sourceCompatibility=17 \
             -Pandroid.compileOptions.targetCompatibility=17 \
             -Pkotlin.jvmTarget=17
-          
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
