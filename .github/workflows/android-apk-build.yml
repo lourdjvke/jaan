@@ -27,11 +27,13 @@ jobs:
       - name: Build Vite app
         run: npm run build
 
-      - name: Setup Java 17
+      # ==== FORCE JAVA 21 ====
+      - name: Setup Java 21
+        id: setup-java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: 21
 
       - name: Verify Java
         run: java -version
@@ -58,12 +60,13 @@ jobs:
         run: npx cap sync android
 
       - name: Build Debug APK
+        env:
+          JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
+          # ensure Gradle uses this Java
+          ORG_GRADLE_JAVA_HOME: ${{ steps.setup-java.outputs.java-home }}
         run: |
           cd android
-          ./gradlew assembleDebug \
-            -Pandroid.compileOptions.sourceCompatibility=17 \
-            -Pandroid.compileOptions.targetCompatibility=17 \
-            -Pkotlin.jvmTarget=17
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
