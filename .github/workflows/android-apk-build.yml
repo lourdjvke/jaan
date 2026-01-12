@@ -39,7 +39,7 @@ jobs:
           api-level: 33
           build-tools: '33.0.2'
 
-      - name: Install Capacitor CLI & Android
+      - name: Install Capacitor CLI & Android platform
         run: npm install @capacitor/cli @capacitor/core @capacitor/android --save-dev
 
       - name: Add Android platform if missing
@@ -54,18 +54,20 @@ jobs:
       - name: Create temporary Gradle init script to fix Kotlin duplicates
         run: |
           mkdir -p $GITHUB_WORKSPACE/ci-scripts
-          echo "allprojects {
+          cat <<'EOF' > $GITHUB_WORKSPACE/ci-scripts/init.gradle
+allprojects {
     configurations.all {
         resolutionStrategy.eachDependency { details ->
             if (details.requested.group == 'org.jetbrains.kotlin') {
                 details.useVersion '1.8.22'
             }
         }
-        // Exclude old stdlibs
+        // Exclude old stdlibs causing duplicates
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
     }
-}" > $GITHUB_WORKSPACE/ci-scripts/init.gradle
+}
+EOF
 
       - name: Build Debug APK (force Kotlin via init script)
         run: |
