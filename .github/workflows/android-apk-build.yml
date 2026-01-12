@@ -22,7 +22,7 @@ jobs:
           cache-dependency-path: '**/package.json'
 
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Build Vite app
         run: npm run build
@@ -35,10 +35,18 @@ jobs:
 
       - name: Install Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          api-level: 33
+          build-tools: '33.0.2'
+
+      - name: Install Capacitor CLI
+        run: npm install @capacitor/cli @capacitor/core @capacitor/android --save-dev
+
+      - name: Ensure npx sees local modules
+        run: echo "${{ github.workspace }}/node_modules/.bin" >> $GITHUB_PATH
 
       - name: Sync Capacitor Android
-        run: |
-          npx cap sync android
+        run: npx cap sync android
 
       - name: Build Debug APK
         run: |
