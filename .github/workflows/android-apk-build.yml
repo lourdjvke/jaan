@@ -1,65 +1,68 @@
-name: Build Android APK from React + Vite
+name: Build Android APK
 
-# Run this workflow on every push to main (or adjust branch)
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build-apk:
     runs-on: ubuntu-latest
 
     steps:
-    # 1️⃣ Checkout the code from GitHub
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      # 1️⃣ Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    # 2️⃣ Install Node.js (v20+)
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20'
+      # 2️⃣ Setup Node
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-    # 3️⃣ Install npm dependencies
-    - name: Install dependencies
-      run: npm install
+      # 3️⃣ Install dependencies
+      - name: Install npm dependencies
+        run: npm install
 
-    # 4️⃣ Build your React + Vite project
-    - name: Build React app
-      run: npm run build
+      # 4️⃣ Build Vite / React app
+      - name: Build web app
+        run: npm run build
 
-    # 5️⃣ Install Java JDK and Android SDK
-    - name: Setup Android SDK
-      run: |
-        sudo apt update
-        sudo apt install -y openjdk-17-jdk unzip wget
-        mkdir -p $HOME/android-sdk/cmdline-tools
-        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-        unzip cmdline-tools.zip -d $HOME/android-sdk/cmdline-tools
-        yes | $HOME/android-sdk/cmdline-tools/cmdline-tools/bin/sdkmanager --licenses
-        $HOME/android-sdk/cmdline-tools/cmdline-tools/bin/sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+      # 5️⃣ Setup Java (important: Java 17, not 21)
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
 
-    # 6️⃣ Install Capacitor in the cloud environment
-    - name: Install Capacitor
-      run: npm install @capacitor/cli @capacitor/android
+      # 6️⃣ Install Capacitor CLI
+      - name: Install Capacitor
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android
 
-# 7️⃣ Setup Capacitor Android
-- name: Setup Capacitor Android
-  run: |
-    npx cap init "JaanOnboarding" "com.yourname.jaan" || echo "Already initialized"
-    npx cap add android || echo "Android platform already exists"
-    npx cap copy android
+      # 7️⃣ Ensure Capacitor config exists
+      - name: Ensure capacitor.config.json
+        run: |
+          if [ ! -f capacitor.config.json ]; then
+            npx cap init "JaanApp" "com.lourdjxke.jaan" --web-dir=dist
+          fi
 
+      # 8️⃣ Add Android platform & copy assets
+      - name: Add Android platform
+        run: |
+          npx cap add android || echo "Android already added"
+          npx cap copy android
 
-    # 8️⃣ Build the APK using Gradle
-    - name: Build APK
-      run: |
-        cd android
-        ./gradlew assembleDebug
+      # 9️⃣ Build APK
+      - name: Build APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
 
-    # 9️⃣ Upload APK as artifact
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-debug.apk
-        path: android/app/build/outputs/apk/debug/app-debug.apk
+      # 🔟 Upload APK artifact (v4 – not deprecated)
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
