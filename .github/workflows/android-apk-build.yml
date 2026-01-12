@@ -57,13 +57,10 @@ jobs:
       - name: Sync Capacitor Android
         run: npx cap sync android
 
-      - name: Build Debug APK (force Java 17)
-        env:
-          JAVA_TOOL_OPTIONS: "-source 17 -target 17"
+      - name: Build Debug APK
         run: |
           cd android
           ./gradlew assembleDebug \
-            -Dorg.gradle.java.home=$JAVA_HOME \
             -Pandroid.compileOptions.sourceCompatibility=17 \
             -Pandroid.compileOptions.targetCompatibility=17 \
             -Pkotlin.jvmTarget=17
