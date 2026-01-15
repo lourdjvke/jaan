@@ -13,9 +13,10 @@ interface Props {
   onBack: () => void;
   onLogin: () => void;
   onSocialClick?: () => void;
+  showToast: (message: string) => void;
 }
 
-const SignUp: React.FC<Props> = ({ onNext, onBack, onLogin, onSocialClick }) => {
+const SignUp: React.FC<Props> = ({ onNext, onBack, onLogin, onSocialClick, showToast }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
@@ -41,7 +42,7 @@ const SignUp: React.FC<Props> = ({ onNext, onBack, onLogin, onSocialClick }) => 
 
       onNext(email);
     } catch (e: any) {
-      alert(e.message);
+      showToast(e.message);
     } finally {
       setLoading(false);
     }
