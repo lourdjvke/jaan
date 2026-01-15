@@ -8,7 +8,6 @@ import SignUp from './components/SignUp';
 import Login from './components/Login';
 import ForgotPassword from './components/ForgotPassword';
 import VerificationSent from './components/VerificationSent';
-import CreatePassword from './components/CreatePassword';
 import KYCForm from './components/KYCForm';
 import TransactionPin from './components/TransactionPin';
 import SuccessScreen from './components/SuccessScreen';
@@ -30,7 +29,6 @@ export enum ScreenState {
   LOGIN,
   FORGOT_PASSWORD,
   VERIFICATION_SENT,
-  CREATE_PASSWORD,
   KYC_FORM,
   TRANSACTION_PIN,
   SUCCESS,
@@ -117,13 +115,12 @@ const App: React.FC = () => {
     switch (currentScreen) {
       case ScreenState.SPLASH: return <SplashScreen />;
       case ScreenState.ONBOARDING_1: return <OnboardingOne onNext={() => navigateTo(ScreenState.ONBOARDING_2)} onSkip={() => navigateTo(ScreenState.SIGN_UP)} />;
-      case ScreenState.ONBOARDING_2: return <OnboardingTwo onGetStarted={() => navigateTo(ScreenState.SIGN_UP)} onSkip={() => navigateTo(ScreenState.SIGN_UP)} />;
+      case ScreenState.ONBOARDING_2: return <OnboardingTwo onGetStarted={() => navigateTo(ScreenState.SIGN_UP)} onSkip={() => navigateTo(ScreenState.SIGN_.UP)} />;
       case ScreenState.SIGN_UP: return <SignUp onNext={(email) => { setUserEmail(email); navigateTo(ScreenState.VERIFICATION_SENT); }} onBack={() => navigateTo(ScreenState.ONBOARDING_2, true)} onLogin={() => navigateTo(ScreenState.LOGIN)} onSocialClick={() => showToast("Coming soon")} showToast={showToast} />;
       case ScreenState.LOGIN: return <Login onBack={() => navigateTo(ScreenState.SIGN_UP, true)} onSignUp={() => navigateTo(ScreenState.SIGN_UP)} onForgot={() => navigateTo(ScreenState.FORGOT_PASSWORD)} onSocialClick={() => showToast("Coming soon")} showToast={showToast} />;
       case ScreenState.FORGOT_PASSWORD: return <ForgotPassword onBack={() => navigateTo(ScreenState.LOGIN, true)} showToast={showToast} />;
-      case ScreenState.VERIFICATION_SENT: return <VerificationSent email={userEmail} onVerified={() => navigateTo(ScreenState.CREATE_PASSWORD)} onBack={() => { auth.signOut(); navigateTo(ScreenState.SIGN_UP, true); }} />;
-      case ScreenState.CREATE_PASSWORD: return <CreatePassword onNext={() => navigateTo(ScreenState.KYC_FORM)} onBack={() => navigateTo(ScreenState.VERIFICATION_SENT, true)} />;
-      case ScreenState.KYC_FORM: return <KYCForm onNext={() => navigateTo(ScreenState.TRANSACTION_PIN)} onBack={() => navigateTo(ScreenState.CREATE_PASSWORD, true)} />;
+      case ScreenState.VERIFICATION_SENT: return <VerificationSent email={userEmail} onVerified={() => navigateTo(ScreenState.KYC_FORM)} onBack={() => { auth.signOut(); navigateTo(ScreenState.SIGN_UP, true); }} />;
+      case ScreenState.KYC_FORM: return <KYCForm onNext={() => navigateTo(ScreenState.TRANSACTION_PIN)} onBack={() => navigateTo(ScreenState.SIGN_UP, true)} />;
       case ScreenState.TRANSACTION_PIN: return <TransactionPin onNext={() => navigateTo(ScreenState.SUCCESS)} onBack={() => navigateTo(ScreenState.KYC_FORM, true)} />;
       case ScreenState.SUCCESS: return <SuccessScreen onFinish={() => navigateTo(ScreenState.DASHBOARD)} />;
       case ScreenState.DASHBOARD: return <Dashboard 
