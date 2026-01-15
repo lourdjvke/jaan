@@ -7,9 +7,10 @@ import { sendPasswordResetEmail } from 'firebase/auth';
 
 interface Props {
   onBack: () => void;
+  showToast: (message: string) => void;
 }
 
-const ForgotPassword: React.FC<Props> = ({ onBack }) => {
+const ForgotPassword: React.FC<Props> = ({ onBack, showToast }) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -21,7 +22,7 @@ const ForgotPassword: React.FC<Props> = ({ onBack }) => {
       await sendPasswordResetEmail(auth, email);
       setSent(true);
     } catch (e: any) {
-      alert(e.message);
+      showToast(e.message);
     } finally {
       setLoading(false);
     }
