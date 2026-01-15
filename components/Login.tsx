@@ -12,24 +12,23 @@ interface Props {
   onSignUp: () => void;
   onForgot: () => void;
   onSocialClick?: () => void;
+  showToast: (message: string) => void;
 }
 
-const Login: React.FC<Props> = ({ onBack, onSignUp, onForgot, onSocialClick }) => {
+const Login: React.FC<Props> = ({ onBack, onSignUp, onForgot, onSocialClick, showToast }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) return;
     setLoading(true);
-    setError('');
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
       if (!userCredential.user.emailVerified) {
-        setError('Please verify your email address before logging in.');
+        showToast('Please verify your email address before logging in.');
         return;
       }
 
@@ -44,9 +43,9 @@ const Login: React.FC<Props> = ({ onBack, onSignUp, onForgot, onSocialClick }) =
       
     } catch (e: any) {
       if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
-        setError('Invalid email or password.');
+        showToast('Invalid email or password.');
       } else {
-        setError(e.message);
+        showToast(e.message);
       }
     } finally {
       setLoading(false);
@@ -94,8 +93,6 @@ const Login: React.FC<Props> = ({ onBack, onSignUp, onForgot, onSocialClick }) =
             </button>
           </div>
         </div>
-
-        {error && <p className="text-red-500 text-[11px] font-bold">{error}</p>}
 
         <div className="text-left">
            <button onClick={onForgot} className="text-red-500 text-[12px] font-bold">Forgot password?</button>
