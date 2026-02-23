@@ -261,7 +261,7 @@ const Airtime: React.FC<Props> = ({ onBack, showToast }) => {
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center shadow-sm focus-within:border-[#6338F9] transition-all h-[58px]">
               <span className="text-[16px] font-black text-gray-400 mr-2">₦</span>
-              <input type="number" placeholder="Min ₦100" value={amount} onChange={(e) => setAmount(e.target.value)} className="flex-1 bg-transparent border-none outline-none font-black text-[16px] text-[#111]" />
+              <input type="number" placeholder="Min ₦50" value={amount} onChange={(e) => setAmount(e.target.value)} className="flex-1 bg-transparent border-none outline-none font-black text-[16px] text-[#111]" />
             </div>
           </div>
         ) : (
